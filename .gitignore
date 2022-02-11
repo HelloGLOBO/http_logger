@@ -7,3 +7,8 @@ pkg
 http.log
 Gemfile.lock
 
+/.idea/.gitignore
+/.idea/http_logger.iml
+/.idea/misc.xml
+/.idea/modules.xml
+/.idea/vcs.xml
