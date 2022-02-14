@@ -98,7 +98,8 @@ class HttpLogger
 
 		if self.class.statsd_enabled
 			# FIXME check key
-			STATSDAPI.timing("portal.logger.#{self.class.name}.log_request_url", stop_millis(ofset))
+			# STATSDAPI.timing("portal.logger.#{self.class.name}.log_request_url", stop_millis(ofset))
+			STATSDAPI.timing("portal.logger.log_request_url", 123)
 		end
 
 		log("HTTP #{request.method} (%0.2fms)" % (ofset * 1000), request_url(http, request))
@@ -136,7 +137,8 @@ class HttpLogger
 	def log_response_code(response)
 		if self.class.statsd_enabled
 			# FIXME check key
-			STATSDAPI.increment("#{response.class}_(#{response.code})")
+			# STATSDAPI.increment("#{response.class}_(#{response.code})")
+			STATSDAPI.increment("portal.logger.counter_(#{200})")
 		end
 
 		log("Response status", "#{response.class} (#{response.code})")
