@@ -33,6 +33,11 @@ class HttpLogger
 		attr_accessor :colorize
 		attr_accessor :ignore
 		attr_accessor :level
+
+		attr_accessor :statsd_prefix
+		attr_accessor :statsd_max_url_element
+		attr_accessor :statsd_enabled
+		attr_accessor :statsd_destination
 	end
 
 	self.log_headers = false
@@ -42,6 +47,12 @@ class HttpLogger
 	self.collapse_body_limit = 5000
 	self.ignore = []
 	self.level = :debug
+
+	self.statsd_prefix = "http"
+	self.statsd_max_url_element = 0
+	self.statsd_enabled = false
+	self.statsd_destination = nil
+
 
 	def self.perform(*args, &block)
 		instance.perform(*args, &block)
