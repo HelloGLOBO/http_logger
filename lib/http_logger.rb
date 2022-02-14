@@ -54,6 +54,14 @@ class HttpLogger
 	self.statsd_destination = nil
 
 
+	def truncate_url_for_statsd(http, request, response = nil)
+		hostname = "#{http.address}:#{http.port}"
+		http_response_code = response.nil? ? "" : response.code
+		path_split = request.path.nil? ? "" : request.path.split('/').reject {|c| c.blank?}.take(self.class.statsd_max_url_element)
+		self.class.statsd_prefix + hostname + path_split + request.method + http_response_code
+	end
+
+
 	def self.perform(*args, &block)
 		instance.perform(*args, &block)
 	end
@@ -82,10 +90,17 @@ class HttpLogger
 		end
 	end
 
+
 	protected
 
 	def log_request_url(http, request, start_time)
 		ofset = Time.now - start_time
+
+		if self.class.statsd_enabled
+			# FIXME check key
+			STATSDAPI.timing("portal.logger.#{self.class.name}.log_request_url", stop_millis(ofset))
+		end
+
 		log("HTTP #{request.method} (%0.2fms)" % (ofset * 1000), request_url(http, request))
 	end
 
@@ -119,6 +134,11 @@ class HttpLogger
 	end
 
 	def log_response_code(response)
+		if self.class.statsd_enabled
+			# FIXME check key
+			STATSDAPI.increment("#{response.class}_(#{response.code})")
+		end
+
 		log("Response status", "#{response.class} (#{response.code})")
 	end
 
@@ -211,7 +231,18 @@ class HttpLogger
 	def collapse_body_limit
 		self.class.collapse_body_limit
 	end
+
+
+	private
+
+	require 'time'
+
+	def stop_millis(start_nanos)
+		(Process.clock_gettime(Process::CLOCK_MONOTONIC, :nanosecond) - start_nanos) * 1e-6
+	end
+
 end
+
 
 block = lambda do |a|
 	# raise instance_methods.inspect
