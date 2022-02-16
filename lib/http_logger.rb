@@ -54,14 +54,6 @@ class HttpLogger
 	self.statsd_destination = nil
 
 
-	def truncate_url_for_statsd(http, request, response = nil)
-		hostname = "#{http.address}:#{http.port}"
-		http_response_code = response.nil? ? "" : response.code
-		path_split = request.path.nil? ? "" : request.path.split('/').reject {|c| c.blank?}.take(self.class.statsd_max_url_element)
-		self.class.statsd_prefix + hostname + path_split + request.method + http_response_code
-	end
-
-
 	def self.perform(*args, &block)
 		instance.perform(*args, &block)
 	end
@@ -82,11 +74,13 @@ class HttpLogger
 			log_request_url(http, request, start_time)
 			log_request_body(request)
 			log_request_headers(request)
+
 			if defined?(response) && response
-				log_response_code(response)
+				log_response_code(http, request, response)
 				log_response_headers(response)
 				log_response_body(response.body)
 			end
+
 		end
 	end
 
@@ -97,12 +91,12 @@ class HttpLogger
 		ofset = Time.now - start_time
 
 		if self.class.statsd_enabled
-			# FIXME check key
-			# STATSDAPI.timing("portal.logger.#{self.class.name}.log_request_url", stop_millis(ofset))
-			STATSDAPI.timing("portal.logger.log_request_url", 123)
+			message = truncate_url_for_statsd(http, request)
+			STATSDAPI.timing(message, stop_millis(ofset))
+			log(message, nil)
+		else
+			log("HTTP #{request.method} (%0.2fms)" % (ofset * 1000), request_url(http, request))
 		end
-
-		log("HTTP #{request.method} (%0.2fms)" % (ofset * 1000), request_url(http, request))
 	end
 
 	def request_url(http, request)
@@ -134,14 +128,14 @@ class HttpLogger
 		end
 	end
 
-	def log_response_code(response)
+	def log_response_code(http, request, response)
 		if self.class.statsd_enabled
-			# FIXME check key
-			# STATSDAPI.increment("#{response.class}_(#{response.code})")
-			STATSDAPI.increment("portal.logger.counter_(#{200})")
+			message = truncate_url_for_statsd(http, request, response)
+			STATSDAPI.increment(message)
+			log(message, nil)
+		else
+			log("Response status", "#{response.class} (#{response.code})")
 		end
-
-		log("Response status", "#{response.class} (#{response.code})")
 	end
 
 	def log_response_headers(response)
@@ -241,6 +235,13 @@ class HttpLogger
 
 	def stop_millis(start_nanos)
 		(Process.clock_gettime(Process::CLOCK_MONOTONIC, :nanosecond) - start_nanos) * 1e-6
+	end
+
+	def truncate_url_for_statsd(http, request, response = nil)
+		hostname = "#{http.address}:#{http.port}"
+		http_response_code = response.nil? ? "" : response.code
+		path_split = request.path.nil? ? "" : request.path.split('/').reject {|c| c.blank?}.take(self.class.statsd_max_url_element)
+		self.class.statsd_prefix + hostname + path_split + request.method + http_response_code
 	end
 
 end
