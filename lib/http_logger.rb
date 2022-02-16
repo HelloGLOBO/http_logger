@@ -241,7 +241,7 @@ class HttpLogger
 		hostname = "#{http.address}:#{http.port}"
 		http_response_code = response.nil? ? "" : response.code
 		path_split = request.path.nil? ? "" : request.path.split('/').reject {|c| c.blank?}.take(self.class.statsd_max_url_element)
-		self.class.statsd_prefix + hostname + path_split + request.method + http_response_code
+		self.class.statsd_prefix + hostname + path_split.join('') + request.method + http_response_code
 	end
 
 end
