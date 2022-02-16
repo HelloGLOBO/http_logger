@@ -132,7 +132,7 @@ class HttpLogger
 		if self.class.statsd_enabled
 			message = truncate_url_for_statsd(http, request, response)
 			STATSDAPI.increment(message)
-			log(message, nil)
+			log(message, "#{response.class} (#{response.code})")
 		else
 			log("Response status", "#{response.class} (#{response.code})")
 		end
