@@ -239,9 +239,11 @@ class HttpLogger
 
 	def truncate_url_for_statsd(http, request, response = nil)
 		hostname = "#{http.address}"
-		http_response_code = response.nil? ? "" : "#{request.method}.#{response.code}"
+		http_response_code = response.nil? ? "" : ".#{request.method}.#{response.code}"
 		path_split = request.path.nil? ? "" : request.path.split('/').reject {|c| c.blank?}.take(self.class.statsd_max_url_element)
-		hostname + path_split.join('.') + http_response_code
+		dotted_path = path_split.empty? ? "" : ".#{path_split.join('.')}"
+		dotted_path = dotted_path.empty? ? "" : dotted_path.split('?').first
+		hostname + dotted_path + http_response_code
 	end
 
 end
